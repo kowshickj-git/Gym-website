@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from '@/components/ui/feedback';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator, Switch } from '@/components/ui/misc';
+import { Badge } from '@/components/ui/badge';
 import { SubmitButton } from '@/components/submit-button';
 import { saveGymSettings, type SettingsState } from '@/app/(admin)/admin/settings/actions';
 import type { GymSettings } from '@/types/database';
@@ -105,6 +107,54 @@ export function GymSettingsForm({ settings }: { settings: GymSettings }) {
           />
         </div>
       </div>
+
+      <Separator />
+
+      {/* --------------------------------------------------------- UPI Direct */}
+      <fieldset className="space-y-4">
+        <legend className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
+          <span className="text-muted-foreground">Accept UPI directly</span>
+          <Badge variant="success">No transaction fee</Badge>
+        </legend>
+
+        <p className="text-muted-foreground text-sm text-pretty">
+          Members pay your UPI id straight from their own app, so the money lands in your bank account and nobody takes
+          a percentage. Because UPI does not notify us, you confirm each payment against your bank SMS from the{' '}
+          <span className="font-medium">UPI confirmations</span> screen.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Your UPI id"
+            name="upi_vpa"
+            defaultValue={settings.upi_vpa ?? ''}
+            placeholder="ironcore@okaxis"
+            className="font-mono lowercase"
+            autoCapitalize="none"
+            spellCheck={false}
+            error={error('upi_vpa')}
+            hint="The id you would give someone to pay you by UPI."
+          />
+          <Field
+            label="Name shown in their app"
+            name="upi_payee_name"
+            defaultValue={settings.upi_payee_name ?? ''}
+            placeholder={settings.gym_name}
+            error={error('upi_payee_name')}
+            hint="Leave blank to use the gym name."
+          />
+        </div>
+
+        <div className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+          <div>
+            <Label htmlFor="upi_enabled">Offer UPI payment at checkout</Label>
+            <p className="text-muted-foreground text-xs text-pretty">
+              Only switch this on once the id above is correct — a wrong id sends members&apos; money to a stranger.
+            </p>
+          </div>
+          <Switch id="upi_enabled" name="upi_enabled" defaultChecked={settings.upi_enabled} className="mt-1" />
+        </div>
+      </fieldset>
 
       {state.error ? (
         <Alert variant="destructive">

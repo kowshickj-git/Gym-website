@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/misc';
+import { UpiPayPanel } from '@/components/member/upi-pay-panel';
 import { formatCurrency, formatDate, telLink } from '@/lib/utils';
 import type { Quote } from '@/lib/pricing';
 
@@ -79,6 +80,7 @@ export function CheckoutClient({
   gymPhone,
   razorpayKeyId,
   razorpayConfigured,
+  upiEnabled,
   startDate,
 }: {
   plan: CheckoutPlan;
@@ -88,6 +90,7 @@ export function CheckoutClient({
   gymPhone: string | null;
   razorpayKeyId: string;
   razorpayConfigured: boolean;
+  upiEnabled: boolean;
   startDate: string | null;
 }) {
   const router = useRouter();
@@ -337,7 +340,60 @@ export function CheckoutClient({
         </Alert>
       ) : null}
 
-      {!razorpayConfigured ? (
+      {/* UPI Direct first: it is the cheapest route for both sides, and in a
+          Tamil Nadu gym it is what most members will reach for anyway. */}
+      {upiEnabled ? (
+        <UpiPayPanel
+          planId={plan.id}
+          couponCode={appliedCoupon?.coupon_code ?? null}
+          amount={quote.final_amount}
+          gymName={gymName}
+        />
+      ) : null}
+
+      {upiEnabled && razorpayConfigured ? (
+        <div className="flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">or</span>
+          <Separator className="flex-1" />
+        </div>
+      ) : null}
+
+      {razorpayConfigured ? (
+        <>
+          {status ? (
+            <p className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              {status}
+            </p>
+          ) : null}
+
+          {/* Sticky so the primary action stays in reach on a long phone page. */}
+          <div className="bg-background/95 supports-[backdrop-filter]:bg-background/85 sticky bottom-0 -mx-4 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+            <Button
+              size="xl"
+              variant={upiEnabled ? 'outline' : 'default'}
+              className="w-full"
+              onClick={() => void onPay()}
+              disabled={payPending || couponPending}
+            >
+              {payPending ? <Loader2 className="animate-spin" aria-hidden /> : <Lock aria-hidden />}
+              {payPending
+                ? 'Processing…'
+                : upiEnabled
+                  ? `Card or netbanking — ${formatCurrency(quote.final_amount)}`
+                  : `Pay ${formatCurrency(quote.final_amount)}`}
+            </Button>
+          </div>
+
+          <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-center text-xs">
+            <ShieldCheck className="size-3.5" aria-hidden />
+            Secured by Razorpay. Confirms instantly.
+          </p>
+        </>
+      ) : null}
+
+      {!upiEnabled && !razorpayConfigured ? (
         <Alert variant="warning">
           <BadgeIndianRupee aria-hidden />
           <AlertTitle>Online payment is not switched on yet</AlertTitle>
@@ -356,29 +412,8 @@ export function CheckoutClient({
             ) : null}
           </AlertDescription>
         </Alert>
-      ) : (
-        <>
-          {status ? (
-            <p className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-              {status}
-            </p>
-          ) : null}
+      ) : null}
 
-          {/* Sticky so the primary action stays in reach on a long phone page. */}
-          <div className="bg-background/95 supports-[backdrop-filter]:bg-background/85 sticky bottom-0 -mx-4 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
-            <Button size="xl" className="w-full" onClick={() => void onPay()} disabled={payPending || couponPending}>
-              {payPending ? <Loader2 className="animate-spin" aria-hidden /> : <Lock aria-hidden />}
-              {payPending ? 'Processing…' : `Pay ${formatCurrency(quote.final_amount)}`}
-            </Button>
-          </div>
-
-          <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-center text-xs">
-            <ShieldCheck className="size-3.5" aria-hidden />
-            Secured by Razorpay. UPI, cards and netbanking accepted.
-          </p>
-        </>
-      )}
     </div>
   );
 }

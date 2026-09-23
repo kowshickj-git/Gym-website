@@ -258,7 +258,22 @@ export const gymSettingsSchema = z.object({
   receipt_terms: optionalText(500),
   opening_hours: optionalText(140),
   maps_url: optionalText(300),
-});
+  /** UPI Direct: the gym's own id, so payments arrive with no gateway fee. */
+  upi_vpa: trimmed
+    .optional()
+    .nullable()
+    .transform((value) => (value ? value.toLowerCase() : null))
+    .refine(
+      (value) => value === null || /^[a-z0-9.\-_]{2,64}@[a-z][a-z0-9.\-]{1,32}$/.test(value),
+      'Enter a valid UPI id, for example ironcore@okaxis',
+    ),
+  upi_payee_name: optionalText(50),
+  upi_enabled: z.boolean().default(false),
+})
+  .refine((data) => !data.upi_enabled || Boolean(data.upi_vpa), {
+    message: 'Add your UPI id before switching UPI payments on',
+    path: ['upi_vpa'],
+  });
 
 export const staffSchema = z.object({
   email: trimmed.min(1, 'Email is required').email('Enter a valid email address'),

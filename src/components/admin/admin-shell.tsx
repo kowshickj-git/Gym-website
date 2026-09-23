@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {
+  BadgeIndianRupee,
   BarChart3,
   CalendarClock,
   CreditCard,
@@ -25,6 +26,7 @@ export const ADMIN_NAV = [
   { href: '/admin/expiring', label: 'Expiring soon', Icon: CalendarClock },
   { href: '/admin/expired', label: 'Expired', Icon: XCircle },
   { href: '/admin/payments', label: 'Payments', Icon: CreditCard },
+  { href: '/admin/payments/upi', label: 'UPI confirmations', Icon: BadgeIndianRupee },
   { href: '/admin/plans', label: 'Plans & pricing', Icon: Dumbbell, adminOnly: true },
   { href: '/admin/offers', label: 'Offers', Icon: Tag, adminOnly: true },
   { href: '/admin/reports', label: 'Reports', Icon: BarChart3 },

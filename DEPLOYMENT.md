@@ -111,10 +111,37 @@ Further staff are added from **/admin/settings** once you are signed in.
 
 ---
 
-## 4. Razorpay
+## 4a. UPI Direct — the free option, no keys needed
 
-The app works without this — members are told to pay at the desk, and staff
-record it — so you can go live first and add payments later.
+Do this before Razorpay. It costs nothing, takes two minutes, and needs no
+account anywhere: members pay the gym's UPI id straight from their own app.
+
+1. Sign in at `/admin/settings`.
+2. Under **Accept UPI directly**, enter the gym's UPI id — the one the owner
+   would give anyone to pay them, e.g. `ironcore@okaxis`.
+3. Check it. **Send ₹1 to it from your own phone before switching this on** — a
+   typo here sends members' money to a stranger, and nothing in this system can
+   get it back.
+4. Turn on **Offer UPI payment at checkout**.
+
+Members now see a "Pay by UPI — no fees" button. After paying they type the
+12-digit reference their app showed, and it appears in **/admin/payments/upi**
+for staff to confirm against the bank SMS. Confirming activates the membership
+and issues the receipt.
+
+Make sure the gym's WhatsApp or contact number is set in Settings too — the app
+messages that number whenever a member reports a payment, so nobody is left
+waiting for someone to happen to check the dashboard.
+
+## 4b. Razorpay — cards, netbanking, instant confirmation
+
+Optional, and worth adding on top of UPI Direct rather than instead of it: it
+confirms automatically, so members who want the membership live the moment they
+pay get that.
+
+On fees: Indian regulation bars a merchant discount rate on UPI and RuPay debit,
+so those stay free even through Razorpay. The ~2% applies to credit cards,
+netbanking and wallets.
 
 1. Create an account at [razorpay.com](https://razorpay.com) and complete KYC.
 2. **Settings → API Keys → Generate Key**. Set:
@@ -177,7 +204,9 @@ Then walk the list:
 - [ ] Example offers are deleted or edited.
 - [ ] `DEMO_MODE` and `NEXT_PUBLIC_DEMO_MODE` are both `false`.
 - [ ] A real member can receive an OTP and sign in.
-- [ ] A ₹1 live payment completes and produces a receipt.
+- [ ] The UPI id in Settings is correct — **you have sent ₹1 to it yourself**.
+- [ ] A member-side UPI payment appears in /admin/payments/upi and confirms.
+- [ ] A ₹1 live card payment completes and produces a receipt (if Razorpay is on).
 - [ ] `curl` the cron endpoint and confirm it returns a summary.
 - [ ] Staff have their own accounts — nobody is sharing the owner login.
 - [ ] Open `/admin` on the owner's actual phone and check that finding a member

@@ -68,6 +68,10 @@ export type GymSettings = {
   reminder_offsets_days: number[];
   opening_hours: string | null;
   maps_url: string | null;
+  /** The gym's own UPI id. Payments via UPI Direct land straight in this account. */
+  upi_vpa: string | null;
+  upi_payee_name: string | null;
+  upi_enabled: boolean;
   updated_at: string;
 }
 
@@ -197,6 +201,12 @@ export type Payment = {
   paid_at: string | null;
   collected_by: string | null;
   collected_by_name: string | null;
+  /** UTR the member reported after paying by UPI Direct. */
+  upi_reference: string | null;
+  upi_reference_at: string | null;
+  /** Staff member who matched the UPI reference against the bank statement. */
+  confirmed_by: string | null;
+  confirmed_by_name: string | null;
   notes: string | null;
   metadata: Json;
   created_at: string;
@@ -442,6 +452,28 @@ export interface Database {
         Returns: Member;
       };
       fn_set_my_photo: { Args: { p_photo_url: string | null }; Returns: Member };
+      fn_start_upi_payment: {
+        Args: {
+          p_member_id: string;
+          p_plan_id: string;
+          p_base_amount: number;
+          p_discount_amount: number;
+          p_amount: number;
+          p_plan_snapshot: Json;
+          p_offer_id?: string | null;
+          p_coupon_code?: string | null;
+        };
+        Returns: Payment;
+      };
+      fn_submit_upi_reference: { Args: { p_payment_id: string; p_reference: string }; Returns: Payment };
+      fn_confirm_upi_payment: {
+        Args: { p_payment_id: string; p_confirmed_by: string; p_confirmed_name?: string | null };
+        Returns: SettlementResult;
+      };
+      fn_reject_upi_payment: {
+        Args: { p_payment_id: string; p_reason: string; p_rejected_by: string };
+        Returns: Payment;
+      };
       fn_purge_expired_otps: { Args: Record<string, never>; Returns: number };
     };
     Enums: {

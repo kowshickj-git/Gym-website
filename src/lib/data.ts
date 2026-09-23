@@ -38,6 +38,9 @@ const FALLBACK_SETTINGS: GymSettings = {
   reminder_offsets_days: [7, 3, 1, 0],
   opening_hours: null,
   maps_url: null,
+  upi_vpa: null,
+  upi_payee_name: null,
+  upi_enabled: false,
   updated_at: new Date().toISOString(),
 };
 

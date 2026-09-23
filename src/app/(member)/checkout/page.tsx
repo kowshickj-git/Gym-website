@@ -81,6 +81,7 @@ export default async function CheckoutPage({
         gymPhone={settings.contact_phone}
         razorpayKeyId={publicEnv.razorpayKeyId}
         razorpayConfigured={isRazorpayConfigured()}
+        upiEnabled={Boolean(settings.upi_enabled && settings.upi_vpa)}
         startDate={(startDate as unknown as string) ?? null}
       />
     </div>

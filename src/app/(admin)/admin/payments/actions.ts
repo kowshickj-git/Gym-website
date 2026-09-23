@@ -226,3 +226,94 @@ export async function reverifyPayment(paymentId: string): Promise<ReverifyResult
     receiptNumber: result.receipt_number,
   };
 }
+
+export interface UpiDecisionResult {
+  error?: string;
+  message?: string;
+}
+
+/**
+ * Confirms a UPI Direct payment against the bank statement.
+ *
+ * This is the human step that stands in for a gateway webhook. The staff member
+ * has seen the money arrive — matching the reference the member reported to the
+ * bank SMS — and this activates the membership through the same settlement
+ * function every other payment uses.
+ */
+export async function confirmUpiPayment(paymentId: string): Promise<UpiDecisionResult> {
+  const staff = await assertStaff().catch(() => null);
+  if (!staff) return { error: 'Your session has expired.' };
+
+  const staffName = staff.profile.full_name ?? staff.profile.email ?? 'Staff';
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase.rpc('fn_confirm_upi_payment', {
+    p_payment_id: paymentId,
+    p_confirmed_by: staff.id,
+    p_confirmed_name: staffName,
+  });
+
+  if (error) {
+    console.error('[admin] UPI confirmation failed', error);
+    return { error: 'Could not confirm that payment. Please try again.' };
+  }
+
+  const result = data as unknown as { receipt_number?: string | null; already_settled?: boolean; membership_id?: string };
+
+  await recordAudit({
+    actorUserId: staff.id,
+    actorLabel: staffName,
+    action: 'UPI_PAYMENT_CONFIRMED',
+    entity: 'payments',
+    entityId: paymentId,
+    after: { receipt_number: result.receipt_number, membership_id: result.membership_id },
+  });
+
+  revalidatePath('/admin/payments/upi');
+  revalidatePath('/admin/payments');
+  revalidatePath('/admin');
+
+  return {
+    message: result.already_settled
+      ? 'That payment was already confirmed.'
+      : `Confirmed. Membership activated and receipt ${result.receipt_number} issued.`,
+  };
+}
+
+/**
+ * Rejects a UPI Direct payment the gym cannot find on its statement.
+ *
+ * Nothing is refunded here, because nothing was ever taken by us — the money
+ * either never left the member's account or went somewhere else, and the desk
+ * follows that up with the member directly.
+ */
+export async function rejectUpiPayment(paymentId: string, reason: string): Promise<UpiDecisionResult> {
+  const staff = await assertStaff().catch(() => null);
+  if (!staff) return { error: 'Your session has expired.' };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.rpc('fn_reject_upi_payment', {
+    p_payment_id: paymentId,
+    p_reason: reason,
+    p_rejected_by: staff.id,
+  });
+
+  if (error) {
+    console.error('[admin] UPI rejection failed', error);
+    return { error: 'Could not reject that payment. It may already be settled.' };
+  }
+
+  await recordAudit({
+    actorUserId: staff.id,
+    actorLabel: staff.profile.full_name ?? staff.profile.email,
+    action: 'UPI_PAYMENT_REJECTED',
+    entity: 'payments',
+    entityId: paymentId,
+    after: { reason },
+  });
+
+  revalidatePath('/admin/payments/upi');
+  revalidatePath('/admin/payments');
+
+  return { message: 'Marked as not received. The member has not been charged by us.' };
+}

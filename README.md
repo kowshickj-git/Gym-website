@@ -140,6 +140,33 @@ All of these people, numbers and payments are fictional.
 
 ### Money
 
+There are three ways a member can pay, and all three converge on the same
+settlement function, so a membership and its receipt look identical whichever
+was used.
+
+| Route | Fee | Confirmation |
+|---|---|---|
+| **UPI Direct** | **₹0** | Staff match the reference against the bank SMS |
+| Razorpay | 0% on UPI/RuPay, ~2% on cards | Automatic, within seconds |
+| Cash / card at the desk | ₹0 | Staff record it; activates immediately |
+
+**UPI Direct** is the zero-fee route and needs no gateway at all. The owner puts
+the gym's UPI id in `/admin/settings`; checkout then builds a `upi://pay` deep
+link and a QR for that id, and the money moves member-bank → gym-bank with
+nobody in between.
+
+What UPI does not give a merchant is a callback. So the payment sits `PENDING`
+carrying the 12-digit reference the member reported, and a staff member confirms
+it against the bank SMS from `/admin/payments/upi` — one tap, and the membership
+activates through the same `fn_settle_payment` as everything else. That human
+step is the price of paying no fee, and it is how most small Indian businesses
+already work.
+
+A word on "free": there is no payment *gateway* in India with zero fees, because
+the gateway has costs of its own. What is free is the *rail* — UPI. Indian
+regulation prohibits a merchant discount rate on UPI and RuPay debit, which is
+why UPI costs nothing whether you take it directly or through Razorpay.
+
 Every rupee follows one path, and the browser is never trusted with a price.
 
 ```

@@ -47,6 +47,15 @@ export default async function AdminDashboard() {
     getGymSettings(),
   ]);
 
+  // UPI Direct has no gateway callback, so these sit until someone confirms
+  // them. Surfacing the count here is what stops a member waiting all day.
+  const { count: upiPending } = await supabase
+    .from('payments')
+    .select('id', { count: 'exact', head: true })
+    .eq('method', 'UPI')
+    .eq('status', 'PENDING')
+    .not('upi_reference', 'is', null);
+
   const stats = (statsResult.data as unknown as DashboardStats | null) ?? null;
   const series = (seriesResult.data as unknown as RevenueSeriesRow[] | null) ?? [];
   const categories = (categoryResult.data as unknown as CategoryDistributionRow[] | null) ?? [];
@@ -72,13 +81,19 @@ export default async function AdminDashboard() {
         <p className="text-muted-foreground text-sm">{settings.gym_name}</p>
       </header>
 
-      {!isRazorpayConfigured() ? (
+      {!isRazorpayConfigured() && !settings.upi_enabled ? (
         <Alert variant="warning">
           <BadgeIndianRupee aria-hidden />
-          <AlertTitle>Online payment is not switched on</AlertTitle>
+          <AlertTitle>Members cannot pay online yet</AlertTitle>
           <AlertDescription>
-            Members can browse plans but cannot pay online yet. Add your Razorpay keys to the environment variables to
-            turn it on — cash and UPI recorded at the desk work regardless.
+            <p>
+              The quickest fix costs nothing:{' '}
+              <Link href="/admin/settings" className="font-medium underline underline-offset-4">
+                add your UPI id in Settings
+              </Link>{' '}
+              and members can pay you directly with no transaction fee. Adding Razorpay keys additionally enables card
+              and netbanking. Cash at the desk works either way.
+            </p>
           </AlertDescription>
         </Alert>
       ) : null}
@@ -158,6 +173,22 @@ export default async function AdminDashboard() {
           />
         </div>
       </section>
+
+      {(upiPending ?? 0) > 0 ? (
+        <Alert variant="info">
+          <BadgeIndianRupee aria-hidden />
+          <AlertTitle>
+            {pluralise(upiPending ?? 0, 'UPI payment')} waiting for you to confirm
+          </AlertTitle>
+          <AlertDescription>
+            Members have paid your UPI id and reported their reference. Check them against your bank SMS —{' '}
+            <Link href="/admin/payments/upi" className="font-medium underline underline-offset-4">
+              open the confirmation queue
+            </Link>
+            .
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {stats && stats.unpaid_memberships > 0 ? (
         <Alert variant="warning">

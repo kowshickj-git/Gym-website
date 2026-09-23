@@ -43,6 +43,9 @@ export async function saveGymSettings(_prev: SettingsState, formData: FormData):
     receipt_terms: formData.get('receipt_terms'),
     opening_hours: formData.get('opening_hours'),
     maps_url: formData.get('maps_url'),
+    upi_vpa: formData.get('upi_vpa'),
+    upi_payee_name: formData.get('upi_payee_name'),
+    upi_enabled: formData.get('upi_enabled') === 'on',
   });
 
   if (!parsed.success) {
