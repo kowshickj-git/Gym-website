@@ -103,7 +103,10 @@ class TwilioProvider implements NotificationProvider {
   constructor(public readonly channel: 'SMS' | 'WHATSAPP') {}
 
   private get from() {
-    return this.channel === 'WHATSAPP' ? serverEnv.twilioWhatsappFrom : serverEnv.twilioFrom;
+    if (this.channel !== 'WHATSAPP') return serverEnv.twilioFrom;
+    // Twilio's own docs write the sender as `whatsapp:+14155238886`, so that is
+    // what gets pasted into the variable. We add the prefix ourselves below.
+    return serverEnv.twilioWhatsappFrom?.replace(/^whatsapp:/i, '');
   }
 
   isConfigured() {

@@ -43,3 +43,6 @@ yarn-error.log*
 supabase/.branches
 supabase/.temp
 supabase/.env
+
+# generated deploy kit — SQL bundles and a Vercel env file, both full of secrets
+deploy/

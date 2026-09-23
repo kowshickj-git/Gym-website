@@ -56,6 +56,13 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push          # runs supabase/migrations in order
 ```
 
+…or, if you have the dashboard but not the database password, generate a
+single pasteable file and run it in the Supabase SQL editor:
+
+```bash
+npm run deploy:kit            # writes deploy/01-schema.sql and deploy/02-seed.sql
+```
+
 …or run it locally (needs Docker):
 
 ```bash
@@ -312,6 +319,7 @@ scripts/
 | `npm run typecheck` | TypeScript, no emit |
 | `npm run check:config` | Report which integrations are live |
 | `npm run bootstrap:admin` | Create or repair the owner account |
+| `npm run deploy:kit` | Build paste-ready SQL and Vercel env files in `deploy/` |
 | `npm run db:push` | Apply migrations to the linked project |
 | `npm run db:reset` | Recreate a local database from migrations + seed |
 | `npm run db:types` | Regenerate `src/types/database.ts` from the live schema |

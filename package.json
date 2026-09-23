@@ -16,7 +16,8 @@
     "db:types": "supabase gen types typescript --local > src/types/database.ts",
     "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
     "check:config": "node scripts/check-config.mjs",
-    "db:migrate": "supabase db push"
+    "db:migrate": "supabase db push",
+    "deploy:kit": "node scripts/deploy-kit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

@@ -24,7 +24,26 @@ against it, and Razorpay's webhook needs the live domain.
    server-side environment variables only, and never in a variable whose name
    starts with `NEXT_PUBLIC_`.
 
-4. Apply the schema:
+4. Build the paste-ready files:
+
+   ```bash
+   npm run deploy:kit
+   ```
+
+   That writes a gitignored `deploy/` directory containing the whole schema as
+   one file, the seed as another, and your environment variables in Vercel's
+   import format. It reads `.env.local`, so fill that in first.
+
+5. Apply the schema. **The SQL editor is the path that needs no password** —
+   open your project, go to **SQL Editor → New query**, paste all of
+   `deploy/01-schema.sql`, and press Run. Then do the same with
+   `deploy/02-seed.sql`.
+
+   Both are safe to re-run. Run 01 before 02.
+
+   If you would rather use the CLI, it needs either the database password or a
+   personal access token from
+   [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens):
 
    ```bash
    npx supabase login
@@ -32,26 +51,21 @@ against it, and Razorpay's webhook needs the live domain.
    npx supabase db push
    ```
 
-5. Load the catalogue. The seed file creates the gym profile, both membership
-   categories, eight plans and four example offers — plus eight fictional demo
-   members you should delete before going live.
+   On new projects `db.<ref>.supabase.co:5432` resolves over IPv6 only. If your
+   network has no IPv6, use the Session Pooler connection string from
+   **Project Settings → Database** instead.
 
-   ```bash
-   # everything, including demo members:
-   npx supabase db push --include-seed
-
-   # or paste supabase/seed.sql into the SQL editor
-   ```
-
-   For a real gym, run only the section above the "Demo members" heading, then
+6. The seed creates the gym profile, both membership categories, eight plans and
+   four example offers — plus eight fictional demo members. For a real gym, run
+   only the part of `deploy/02-seed.sql` above the "Demo members" heading, then
    set your own details in `/admin/settings` and your own prices in
    `/admin/plans`.
 
-6. **Auth → Providers**: leave Email enabled. Phone can stay off — member OTPs
+7. **Auth → Providers**: leave Email enabled. Phone can stay off — member OTPs
    are issued by this application, not by Supabase, so the gym can use an Indian
    SMS gateway.
 
-7. **Auth → URL Configuration**: set the Site URL to your production domain.
+8. **Auth → URL Configuration**: set the Site URL to your production domain.
 
 ---
 
@@ -59,8 +73,13 @@ against it, and Razorpay's webhook needs the live domain.
 
 1. Push the repository to GitHub, then **Add New → Project** in Vercel and
    import it. The framework is detected automatically.
-2. Under **Settings → Environment Variables**, add everything from
-   `.env.example` that applies. At minimum:
+2. Under **Settings → Environment Variables**, use the import box and paste
+   `deploy/vercel-env.txt` — `npm run deploy:kit` generates it from your
+   `.env.local` in exactly that format. Check `NEXT_PUBLIC_SITE_URL` before
+   saving: the generator refuses to carry a `localhost` value across, so it
+   arrives as an obvious placeholder for you to replace.
+
+   Set by hand instead if you prefer. At minimum:
 
    | Variable | Value |
    |---|---|

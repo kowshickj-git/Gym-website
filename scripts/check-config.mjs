@@ -82,7 +82,10 @@ if (!smsReady) {
 const whatsappProvider = (process.env.WHATSAPP_PROVIDER ?? 'console').toLowerCase();
 const whatsappReady =
   (['cloud', 'meta'].includes(whatsappProvider) && has('WHATSAPP_PHONE_NUMBER_ID') && has('WHATSAPP_ACCESS_TOKEN')) ||
-  (whatsappProvider === 'twilio' && has('TWILIO_ACCOUNT_SID') && has('TWILIO_WHATSAPP_FROM'));
+  (whatsappProvider === 'twilio' &&
+    has('TWILIO_ACCOUNT_SID') &&
+    has('TWILIO_AUTH_TOKEN') &&
+    has('TWILIO_WHATSAPP_FROM'));
 console.log(`    ${whatsappReady ? '✔' : '○'} WhatsApp via ${whatsappProvider} (optional)`);
 
 const emailReady = (process.env.EMAIL_PROVIDER ?? 'console').toLowerCase() === 'resend' && has('RESEND_API_KEY');
