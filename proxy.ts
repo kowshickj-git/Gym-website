@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import { publicEnv } from '@/lib/env';
+import { supabasePublicConfig } from '@/lib/env';
 
 /** Prefixes that require a signed-in member. */
 const MEMBER_PREFIXES = ['/dashboard', '/profile', '/checkout', '/payments', '/receipts', '/welcome'];
@@ -11,16 +11,18 @@ const ADMIN_PREFIXES = ['/admin'];
 /** Admin paths that must stay reachable while signed out. */
 const ADMIN_PUBLIC = ['/admin/login'];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   // Without Supabase configured there is no session to refresh; let every
   // request through so the setup instructions in the README are reachable.
-  if (!publicEnv.supabaseUrl || !publicEnv.supabaseAnonKey) {
+  // Read at request time, not build time — see supabasePublicConfig().
+  const config = supabasePublicConfig();
+  if (!config.url || !config.anonKey) {
     return NextResponse.next();
   }
 
-  const { response, user } = await updateSession(request);
+  const { response, user } = await updateSession(request, config);
 
   const needsMember = MEMBER_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const needsAdmin =

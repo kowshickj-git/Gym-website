@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { publicEnv } from '@/lib/env';
 
 /**
  * Refreshes the Supabase session on every request and returns the response
@@ -10,10 +9,10 @@ import { publicEnv } from '@/lib/env';
  * session exists; whether that session may see a page is re-checked on the
  * server by the guards in lib/auth/guards.ts, where the role actually lives.
  */
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest, config: { url: string; anonKey: string }) {
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+  const supabase = createServerClient(config.url, config.anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

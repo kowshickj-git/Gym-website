@@ -22,7 +22,6 @@ export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
   razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   /**
    * Demo mode relaxes exactly one thing: the OTP is echoed back to the browser
    * so a reviewer with no SMS gateway can still sign in. It must be off in
@@ -31,9 +30,53 @@ export const publicEnv = {
   demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',
 } as const;
 
+/**
+ * The Supabase URL and anon key as the *server* sees them, read when a request
+ * arrives rather than when the app was built.
+ *
+ * `publicEnv` holds what Next.js inlined at build time. On Vercel, a variable
+ * added after the first deploy is invisible to that build: the dashboard shows
+ * it set while every server query still sees ''. That is exactly how this app
+ * first failed in production — the landing page 500ed while the variables sat
+ * there, correct, in the project settings. Dynamic lookups are never inlined,
+ * so server code reads here, and setting a variable is enough on its own.
+ *
+ * Browser code cannot do this and still uses `publicEnv`.
+ */
+export function supabasePublicConfig(): { url: string; anonKey: string } {
+  return {
+    url: read('NEXT_PUBLIC_SUPABASE_URL') ?? publicEnv.supabaseUrl,
+    anonKey: read('NEXT_PUBLIC_SUPABASE_ANON_KEY') ?? publicEnv.supabaseAnonKey,
+  };
+}
+
+/**
+ * The public origin, used in links inside SMS, WhatsApp and email, and in
+ * canonical and Open Graph metadata. Server-only; no browser code needs it.
+ *
+ * A localhost or placeholder value is never right on a deployment — it would
+ * put an unreachable link in every reminder — so on Vercel those fall through
+ * to the project's own production domain, which Vercel always provides.
+ */
+export function siteUrl(): string {
+  const onVercel = read('VERCEL') === '1';
+  const usable = (value: string | undefined) =>
+    value && !/REPLACE-WITH/i.test(value) && !(onVercel && /localhost|127\.0\.0\.1/.test(value))
+      ? value
+      : undefined;
+
+  const configured = usable(read('NEXT_PUBLIC_SITE_URL')) ?? usable(process.env.NEXT_PUBLIC_SITE_URL);
+  if (configured) return configured.replace(/\/$/, '');
+
+  const vercelHost = read('VERCEL_PROJECT_PRODUCTION_URL') ?? read('VERCEL_URL');
+  if (vercelHost) return `https://${vercelHost}`;
+
+  return 'http://localhost:3000';
+}
+
 export const serverEnv = {
   get supabaseUrl() {
-    return read('SUPABASE_URL') ?? publicEnv.supabaseUrl;
+    return read('SUPABASE_URL') ?? supabasePublicConfig().url;
   },
   get supabaseServiceRoleKey() {
     return read('SUPABASE_SERVICE_ROLE_KEY');

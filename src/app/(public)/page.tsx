@@ -9,7 +9,7 @@ import { formattedGymAddress, getCategories, getGymSettings, getOffersWithRules,
 import { quotePlans } from '@/lib/pricing';
 import { formatDate, formatCurrency, telLink } from '@/lib/utils';
 import { formatPhone } from '@/lib/phone';
-import { publicEnv } from '@/lib/env';
+import { siteUrl } from '@/lib/env';
 
 export const revalidate = 300;
 
@@ -40,7 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       locale: 'en_IN',
       siteName: settings.gym_name,
-      url: publicEnv.siteUrl,
+      url: siteUrl(),
     },
     twitter: { card: 'summary_large_image', title, description },
   };
@@ -67,10 +67,10 @@ export default async function HomePage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'HealthAndBeautyBusiness',
-    '@id': `${publicEnv.siteUrl}/#gym`,
+    '@id': `${siteUrl()}/#gym`,
     name: settings.gym_name,
     description: settings.tagline ?? undefined,
-    url: publicEnv.siteUrl,
+    url: siteUrl(),
     telephone: settings.contact_phone ?? undefined,
     email: settings.contact_email ?? undefined,
     priceRange: '₹₹',

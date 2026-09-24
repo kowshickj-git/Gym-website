@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { dispatch, reminderChannels, templates } from '@/lib/notifications';
 import { DEFAULT_REMINDER_OFFSETS } from '@/lib/constants';
-import { publicEnv, serverEnv } from '@/lib/env';
+import { serverEnv, siteUrl } from '@/lib/env';
 import { recordAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
         planName: membership.plan_name,
         expiryDate: membership.expiry_date,
         daysRemaining: offset,
-        renewUrl: `${publicEnv.siteUrl}/plans`,
+        renewUrl: `${siteUrl()}/plans`,
         gymPhone,
       };
 

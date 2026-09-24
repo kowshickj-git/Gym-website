@@ -9,7 +9,7 @@ import { memberCreateSchema, memberUpdateSchema } from '@/lib/validation';
 import { recordAudit } from '@/lib/audit';
 import { dispatch, reminderChannels, templates } from '@/lib/notifications';
 import { getGymSettings } from '@/lib/data';
-import { publicEnv } from '@/lib/env';
+import { siteUrl } from '@/lib/env';
 
 export interface MemberFormState {
   error?: string;
@@ -102,7 +102,7 @@ async function sendWelcome(memberId: string, name: string, phone: string, email:
   const message = templates.welcome({
     memberName: name,
     gymName: settings.gym_name,
-    loginUrl: `${publicEnv.siteUrl}/login`,
+    loginUrl: `${siteUrl()}/login`,
   });
 
   for (const channel of reminderChannels(Boolean(email))) {

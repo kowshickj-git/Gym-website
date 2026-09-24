@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next';
-import { publicEnv } from '@/lib/env';
+import { siteUrl } from '@/lib/env';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = publicEnv.siteUrl.replace(/\/$/, '');
+  const base = siteUrl().replace(/\/$/, '');
   const lastModified = new Date();
 
   return [

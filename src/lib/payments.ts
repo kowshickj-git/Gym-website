@@ -2,7 +2,7 @@ import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { dispatch, reminderChannels, templates } from '@/lib/notifications';
-import { publicEnv } from '@/lib/env';
+import { siteUrl } from '@/lib/env';
 import { quotePlan, type OfferWithRules, type PricingPlan, type Quote } from '@/lib/pricing';
 import type { OfferPlanRule, PaymentMethod, SettlementResult } from '@/types/database';
 
@@ -203,7 +203,7 @@ async function sendReceiptNotification(result: SettlementResult): Promise<void> 
     amount: Number(snapshot.payment?.amount ?? 0),
     receiptNumber: receipt.receipt_number,
     expiryDate: snapshot.membership?.expiry_date ?? '',
-    receiptUrl: `${publicEnv.siteUrl}/receipts/${receipt.id}`,
+    receiptUrl: `${siteUrl()}/receipts/${receipt.id}`,
   });
 
   const channels = reminderChannels(Boolean(memberRow.email));
