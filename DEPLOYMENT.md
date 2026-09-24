@@ -244,8 +244,8 @@ Then walk the list:
       footer. These appear on every receipt and in every message.
 - [ ] `/admin/plans` has the gym's real prices. Delete or deactivate any plan
       the gym does not actually sell.
-- [ ] Demo members are deleted (`/admin/members`, or
-      `delete from members where phone like '+91900000000%'`).
+- [ ] Demo members are deleted: **Members → Remove members → Select sample
+      members → Delete**. That also removes their test payments.
 - [ ] Example offers are deleted or edited.
 - [ ] `DEMO_MODE` and `NEXT_PUBLIC_DEMO_MODE` are both `false`.
 - [ ] A real member can receive an OTP and sign in.

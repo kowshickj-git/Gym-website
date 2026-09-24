@@ -289,3 +289,100 @@ export async function cancelMembership(membershipId: string, reason: string): Pr
   revalidatePath('/admin/members');
   return {};
 }
+
+export interface DeleteMembersResult {
+  error?: string;
+  deleted?: number;
+}
+
+const MAX_DELETE = 100;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Permanently deletes members, owner only.
+ *
+ * The database cascades a member to their memberships, payments, receipts and
+ * messages. It does not cascade to their login identity (members.user_id is
+ * ON DELETE SET NULL), so that is removed here too — otherwise the orphaned
+ * account would block the number from ever being registered again. Only
+ * MEMBER-role accounts are ever removed this way, never staff.
+ *
+ * Deactivating is the reversible alternative, and the page says so. Every
+ * deletion is written to the audit log with what it took with it.
+ */
+export async function deleteMembers(memberIds: string[], confirmation: string): Promise<DeleteMembersResult> {
+  const admin = await assertAdmin().catch(() => null);
+  if (!admin) return { error: 'Only the gym owner can delete members.' };
+
+  if (confirmation.trim().toUpperCase() !== 'DELETE') return { error: 'Type DELETE to confirm.' };
+
+  const ids = [...new Set(memberIds)].filter((id) => UUID.test(id));
+  if (ids.length === 0) return { error: 'Select at least one member.' };
+  if (ids.length > MAX_DELETE) return { error: `Delete at most ${MAX_DELETE} members at a time.` };
+
+  const supabase = createAdminClient();
+
+  const [{ data: members, error: loadError }, { data: payments }, { data: receipts }] = await Promise.all([
+    supabase.from('members').select('id, full_name, phone, user_id').in('id', ids),
+    supabase.from('payments').select('member_id, amount, status').in('member_id', ids),
+    supabase.from('receipts').select('member_id').in('member_id', ids),
+  ]);
+  if (loadError || !members) {
+    console.error('[admin] delete members: load failed', loadError);
+    return { error: 'Could not load those members. Please try again.' };
+  }
+  if (members.length === 0) return { error: 'Those members no longer exist.' };
+
+  const { error: deleteError } = await supabase.from('members').delete().in(
+    'id',
+    members.map((m) => m.id),
+  );
+  if (deleteError) {
+    console.error('[admin] delete members failed', deleteError);
+    return { error: 'Could not delete those members. Nothing was changed.' };
+  }
+
+  // Login identities: only ever member accounts.
+  const userIds = members.map((m) => m.user_id).filter((id): id is string => Boolean(id));
+  if (userIds.length) {
+    const { data: accounts } = await supabase.from('users').select('id, role').in('id', userIds);
+    for (const account of accounts ?? []) {
+      if (account.role !== 'MEMBER') continue;
+      const { error } = await supabase.auth.admin.deleteUser(account.id);
+      if (error) console.error('[admin] could not delete member login', account.id, error);
+    }
+  }
+
+  // Profile photos live in a folder named after the member.
+  for (const member of members) {
+    const { data: files } = await supabase.storage.from('member-photos').list(member.id);
+    if (files?.length) {
+      await supabase.storage.from('member-photos').remove(files.map((file) => `${member.id}/${file.name}`));
+    }
+  }
+
+  for (const member of members) {
+    const theirs = (payments ?? []).filter((p) => p.member_id === member.id);
+    const paid = theirs.filter((p) => p.status === 'PAID');
+    await recordAudit({
+      actorUserId: admin.id,
+      actorLabel: admin.profile.full_name ?? admin.profile.email,
+      action: 'MEMBER_DELETED',
+      entity: 'members',
+      entityId: member.id,
+      before: {
+        full_name: member.full_name,
+        phone: member.phone,
+        payments: theirs.length,
+        paid_total: paid.reduce((sum, p) => sum + Number(p.amount), 0),
+        receipts: (receipts ?? []).filter((r) => r.member_id === member.id).length,
+      },
+    });
+  }
+
+  revalidatePath('/admin/members');
+  revalidatePath('/admin');
+  revalidatePath('/admin/payments');
+  revalidatePath('/admin/reports');
+  return { deleted: members.length };
+}

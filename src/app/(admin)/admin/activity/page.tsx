@@ -201,6 +201,7 @@ const ACTION_LABEL: Record<string, string> = {
   MEMBER_DEACTIVATED: 'Deactivated a member',
   MEMBER_REACTIVATED: 'Reactivated a member',
   MEMBERSHIP_CANCELLED: 'Cancelled a membership',
+  MEMBER_DELETED: 'Deleted a member',
   PAYMENT_RECORDED_OFFLINE: 'Recorded a desk payment',
   PAYMENT_ORDER_CREATED: 'Started an online payment',
   PAYMENT_REVERIFIED: 'Re-checked a payment with Razorpay',
@@ -247,6 +248,14 @@ function summarise(before: unknown, after: unknown): string | null {
   const b = (before && typeof before === 'object' ? before : {}) as Record<string, unknown>;
   const a = (after && typeof after === 'object' ? after : {}) as Record<string, unknown>;
   const parts: string[] = [];
+  // A deletion has no "after": describe what was removed instead.
+  if (Object.keys(a).length === 0) {
+    for (const [key, value] of Object.entries(b)) {
+      if (value === null || value === undefined || typeof value === 'object') continue;
+      parts.push(`${key.replaceAll('_', ' ')}: ${String(value)}`);
+    }
+    return parts.length ? parts.slice(0, 5).join(' · ') : null;
+  }
   for (const key of Object.keys(a)) {
     const next = a[key];
     if (next === null || next === undefined || typeof next === 'object') continue;

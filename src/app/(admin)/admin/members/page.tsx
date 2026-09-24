@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { ChevronRight, UserPlus, Users } from 'lucide-react';
+import { ChevronRight, Trash2, UserPlus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Skeleton } from '@/components/ui/feedback';
@@ -25,7 +25,7 @@ export const dynamic = 'force-dynamic';
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function AdminMembersPage({ searchParams }: { searchParams: SearchParams }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const raw = await searchParams;
 
   const filters = memberFilterSchema.parse({
@@ -76,12 +76,22 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
           <h1 className="text-2xl font-bold tracking-tight">Members</h1>
           <p className="text-muted-foreground text-sm">{pluralise(total, 'member')} matching</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/members/new">
-            <UserPlus aria-hidden />
-            Add member
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {staff.role === 'ADMIN' ? (
+            <Button asChild variant="outline">
+              <Link href="/admin/members/remove">
+                <Trash2 aria-hidden />
+                Remove members
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild>
+            <Link href="/admin/members/new">
+              <UserPlus aria-hidden />
+              Add member
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <Suspense fallback={<Skeleton className="h-32 w-full" />}>
@@ -111,7 +121,10 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
                   <div className="flex items-start justify-between gap-3 px-4">
                     <Link href={`/admin/members/${member.id}`} className="min-w-0 flex-1">
                       <p className="truncate font-semibold">{member.full_name}</p>
-                      <p className="text-muted-foreground text-xs">{formatPhone(member.phone)}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {formatPhone(member.phone)}
+                        {!member.is_active ? <span className="text-warning-foreground dark:text-warning"> · Deactivated</span> : null}
+                      </p>
                     </Link>
                     <MembershipStatusBadge status={member.membership_status} showIcon={false} />
                   </div>
@@ -180,6 +193,11 @@ export default async function AdminMembersPage({ searchParams }: { searchParams:
                       <Link href={`/admin/members/${member.id}`} className="hover:underline">
                         {member.full_name}
                       </Link>
+                      {!member.is_active ? (
+                        <span className="text-warning-foreground dark:text-warning block text-xs font-normal">
+                          Deactivated
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell className="text-muted-foreground tnum whitespace-nowrap">
                       {formatPhone(member.phone)}

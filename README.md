@@ -19,8 +19,9 @@ already applied, pay by UPI / card / netbanking, and keep every receipt.
 
 **For the gym** — a dashboard of the numbers that matter, a searchable member
 list, one-tap call and WhatsApp buttons on the expiring and expired lists, cash
-payment recording that activates a membership on the spot, and full control of
-pricing and festival campaigns without touching the database.
+payment recording that activates a membership on the spot, full control of
+pricing and festival campaigns without touching the database, and an owner-only
+page to remove members in bulk (with a one-tap "select sample members").
 
 ---
 
