@@ -281,7 +281,6 @@ export const staffSchema = z.object({
   designation: optionalText(60),
   role: z.enum(['ADMIN', 'STAFF']),
   can_collect_cash: z.boolean().default(true),
-  can_manage_plans: z.boolean().default(false),
 });
 
 // -----------------------------------------------------------------------------

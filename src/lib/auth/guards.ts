@@ -2,6 +2,7 @@ import 'server-only';
 
 import { redirect } from 'next/navigation';
 import { getCurrentUser, type CurrentUser } from './session';
+import { createReadOnlyServerSupabase } from '@/lib/supabase/server';
 import type { Member, UserRole } from '@/types/database';
 
 /**
@@ -94,6 +95,29 @@ export async function assertMember(): Promise<MemberContext> {
 export function isStaffRole(role: UserRole | null | undefined): boolean {
   return role === 'ADMIN' || role === 'STAFF';
 }
+
+/**
+ * Whether this account may take money: record a desk payment, or confirm or
+ * reject a UPI payment. The owner always can. Other staff can only while the
+ * owner leaves "Can take payments" switched on for them in /admin/settings.
+ *
+ * Checked by the actions themselves, not just by hiding buttons.
+ */
+export async function canTakePayments(user: CurrentUser): Promise<boolean> {
+  if (user.role === 'ADMIN') return true;
+  if (user.role !== 'STAFF') return false;
+
+  const supabase = await createReadOnlyServerSupabase();
+  const { data } = await supabase
+    .from('admin_users')
+    .select('can_collect_cash, is_active')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  return Boolean(data?.is_active && data.can_collect_cash);
+}
+
+export const NO_PAYMENT_PERMISSION =
+  'Your account is not allowed to take payments. Ask the gym owner to turn on "Can take payments" for you in Settings.';
 
 /** Maps a thrown guard error onto an HTTP response. */
 export function authErrorResponse(error: unknown): Response | null {

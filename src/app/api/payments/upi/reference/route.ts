@@ -65,6 +65,14 @@ export async function POST(request: NextRequest) {
       if (error.message?.includes('NOT_AWAITING_REFERENCE')) {
         return NextResponse.json({ error: 'This payment is no longer waiting for a reference.' }, { status: 409 });
       }
+      // Someone else's payment and a payment that does not exist get the same
+      // answer on purpose, so this cannot be used to probe for payment ids.
+      if (error.message?.includes('PAYMENT_NOT_FOUND')) {
+        return NextResponse.json({ error: 'We could not find that payment.' }, { status: 404 });
+      }
+      if (error.message?.includes('NOT_A_MEMBER')) {
+        return NextResponse.json({ error: 'Please sign in again.' }, { status: 403 });
+      }
       console.error('[api] UPI reference submission failed', error);
       return NextResponse.json({ error: 'Could not save that reference. Please try again.' }, { status: 500 });
     }

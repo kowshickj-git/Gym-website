@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     ? settings.reminder_offsets_days
     : DEFAULT_REMINDER_OFFSETS;
 
-  const results = { sent: 0, skipped: 0, failed: 0, considered: 0 };
+  const results = { sent: 0, skipped: 0, failed: 0, considered: 0, alreadyRenewed: 0 };
 
   // --------------------------------------------------------------- Reminders
   for (const offset of offsets) {
@@ -92,10 +92,29 @@ export async function GET(request: NextRequest) {
 
     const due = (data ?? []) as unknown as DueMembership[];
 
+    // A member who renewed early has a second membership that starts the day
+    // after this one ends. Reminding them that this one is expiring — or, on
+    // the day, that it has expired — is wrong, and they are precisely the
+    // people the expiring-soon calls exist to produce.
+    const memberIds = [...new Set(due.map((m) => m.member_id))];
+    const { data: later } = memberIds.length
+      ? await supabase
+          .from('memberships')
+          .select('member_id')
+          .in('member_id', memberIds)
+          .neq('status', 'CANCELLED')
+          .gt('expiry_date', target)
+      : { data: [] as { member_id: string }[] };
+    const renewed = new Set((later ?? []).map((row) => row.member_id));
+
     for (const membership of due) {
       const member = membership.members;
       // Deactivated members are not chased; that is what deactivating means.
       if (!member || !member.is_active) continue;
+      if (renewed.has(membership.member_id)) {
+        results.alreadyRenewed += 1;
+        continue;
+      }
 
       results.considered += 1;
 

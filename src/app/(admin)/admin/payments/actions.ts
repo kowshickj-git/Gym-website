@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { assertStaff } from '@/lib/auth/guards';
+import { assertStaff, canTakePayments, NO_PAYMENT_PERMISSION } from '@/lib/auth/guards';
 import { cashPaymentSchema } from '@/lib/validation';
 import { quoteFromDatabase, recordOfflinePayment, settlePayment, PricingError } from '@/lib/payments';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -28,6 +28,7 @@ export interface CashPaymentState {
 export async function recordCashPayment(_prev: CashPaymentState, formData: FormData): Promise<CashPaymentState> {
   const staff = await assertStaff().catch(() => null);
   if (!staff) return { error: 'Your session has expired. Please sign in again.' };
+  if (!(await canTakePayments(staff))) return { error: NO_PAYMENT_PERMISSION };
 
   const parsed = cashPaymentSchema.safeParse({
     member_id: formData.get('member_id'),
@@ -243,6 +244,7 @@ export interface UpiDecisionResult {
 export async function confirmUpiPayment(paymentId: string): Promise<UpiDecisionResult> {
   const staff = await assertStaff().catch(() => null);
   if (!staff) return { error: 'Your session has expired.' };
+  if (!(await canTakePayments(staff))) return { error: NO_PAYMENT_PERMISSION };
 
   const staffName = staff.profile.full_name ?? staff.profile.email ?? 'Staff';
   const supabase = createAdminClient();
@@ -290,6 +292,7 @@ export async function confirmUpiPayment(paymentId: string): Promise<UpiDecisionR
 export async function rejectUpiPayment(paymentId: string, reason: string): Promise<UpiDecisionResult> {
   const staff = await assertStaff().catch(() => null);
   if (!staff) return { error: 'Your session has expired.' };
+  if (!(await canTakePayments(staff))) return { error: NO_PAYMENT_PERMISSION };
 
   const supabase = createAdminClient();
   const { error } = await supabase.rpc('fn_reject_upi_payment', {

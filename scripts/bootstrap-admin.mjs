@@ -112,7 +112,6 @@ async function main() {
       display_name: name,
       designation: 'Owner',
       can_collect_cash: true,
-      can_manage_plans: true,
       is_active: true,
     },
     { onConflict: 'user_id' },

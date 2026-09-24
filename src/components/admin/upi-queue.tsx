@@ -40,7 +40,11 @@ export interface UpiQueueRow {
  * has to be compared, so it is the largest thing on the card and is one tap to
  * copy.
  */
-export function UpiQueue({ rows }: { rows: UpiQueueRow[] }) {
+/**
+ * `canDecide` is false for staff the owner has not allowed to take payments.
+ * They can still see the queue and call the member; the actions re-check it.
+ */
+export function UpiQueue({ rows, canDecide = true }: { rows: UpiQueueRow[]; canDecide?: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [rejecting, setRejecting] = useState<UpiQueueRow | null>(null);
@@ -137,19 +141,25 @@ export function UpiQueue({ rows }: { rows: UpiQueueRow[] }) {
                 ) : (
                   <span />
                 )}
-                <Button
-                  variant="outline"
-                  className="text-destructive"
-                  disabled={pending}
-                  onClick={() => setRejecting(row)}
-                >
-                  <X aria-hidden />
-                  Not received
-                </Button>
-                <Button variant="success" disabled={pending || !row.upi_reference} onClick={() => confirm(row)}>
-                  {pending ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />}
-                  Confirm
-                </Button>
+                {canDecide ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="text-destructive"
+                      disabled={pending}
+                      onClick={() => setRejecting(row)}
+                    >
+                      <X aria-hidden />
+                      Not received
+                    </Button>
+                    <Button variant="success" disabled={pending || !row.upi_reference} onClick={() => confirm(row)}>
+                      {pending ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />}
+                      Confirm
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground col-span-2 text-xs">Only staff who take payments can confirm.</p>
+                )}
               </div>
             </Card>
           </li>

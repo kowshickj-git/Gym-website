@@ -42,7 +42,6 @@ export type AdminUser = {
   display_name: string;
   designation: string | null;
   can_collect_cash: boolean;
-  can_manage_plans: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;

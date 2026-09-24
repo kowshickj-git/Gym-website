@@ -45,14 +45,18 @@ if (/service_role|sb_secret_/.test(key)) {
 
 const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
 
-/** Tables a visitor who has not signed in is meant to read: the shop window. */
-const PUBLIC_TABLES = ['gym_settings', 'membership_categories', 'membership_plans', 'offers'];
+/**
+ * Tables a visitor who has not signed in is meant to read: the shop window.
+ * offer_plan_rules is here on purpose — the public plans page needs an offer's
+ * scope to show the discounted price. Its policy only exposes rules belonging
+ * to offers that are active and inside their date window.
+ */
+const PUBLIC_TABLES = ['gym_settings', 'membership_categories', 'membership_plans', 'offers', 'offer_plan_rules'];
 
 /** Everything else. An empty result counts as denied — RLS filters rather than errors. */
 const PRIVATE_TABLES = [
   'members', 'memberships', 'payments', 'receipts', 'notifications',
-  'otp_challenges', 'admin_users', 'audit_logs', 'users', 'offer_plan_rules',
-  'member_directory',
+  'otp_challenges', 'admin_users', 'audit_logs', 'users', 'member_directory',
 ];
 
 /**

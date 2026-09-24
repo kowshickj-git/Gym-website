@@ -181,11 +181,13 @@ export default async function AdminDashboard() {
             {pluralise(upiPending ?? 0, 'UPI payment')} waiting for you to confirm
           </AlertTitle>
           <AlertDescription>
-            Members have paid your UPI id and reported their reference. Check them against your bank SMS —{' '}
-            <Link href="/admin/payments/upi" className="font-medium underline underline-offset-4">
-              open the confirmation queue
-            </Link>
-            .
+            <p>
+              Members have paid your UPI id and reported their reference. Check them against your bank SMS —{' '}
+              <Link href="/admin/payments/upi" className="font-medium underline underline-offset-4">
+                open the confirmation queue
+              </Link>
+              .
+            </p>
           </AlertDescription>
         </Alert>
       ) : null}

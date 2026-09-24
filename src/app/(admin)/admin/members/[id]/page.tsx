@@ -18,9 +18,10 @@ import { Alert, AlertDescription, AlertTitle, EmptyState } from '@/components/ui
 import { Avatar, AvatarFallback, AvatarImage, Separator } from '@/components/ui/misc';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ContactActions } from '@/components/contact-actions';
 import { MembershipStatusBadge, PaymentStatusBadge } from '@/components/status-badge';
+import { CancelMembershipButton } from '@/components/admin/cancel-membership-button';
 import { MemberStatusToggle } from '@/components/admin/member-status-toggle';
 import { requireStaff } from '@/lib/auth/guards';
 import { createReadOnlyServerSupabase } from '@/lib/supabase/server';
@@ -134,6 +135,15 @@ export default async function AdminMemberDetail({
       <Card>
         <CardHeader>
           <CardTitle>Current membership</CardTitle>
+          {current && staff.role === 'ADMIN' ? (
+            <CardAction>
+              <CancelMembershipButton
+                membershipId={current.id}
+                planName={current.plan_name}
+                memberName={member.full_name}
+              />
+            </CardAction>
+          ) : null}
         </CardHeader>
         <CardContent>
           {current ? (

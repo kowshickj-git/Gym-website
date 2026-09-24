@@ -5,6 +5,7 @@ import {
   CalendarClock,
   CreditCard,
   Dumbbell,
+  History,
   LayoutDashboard,
   LogOut,
   MoreHorizontal,
@@ -30,6 +31,7 @@ export const ADMIN_NAV = [
   { href: '/admin/plans', label: 'Plans & pricing', Icon: Dumbbell, adminOnly: true },
   { href: '/admin/offers', label: 'Offers', Icon: Tag, adminOnly: true },
   { href: '/admin/reports', label: 'Reports', Icon: BarChart3 },
+  { href: '/admin/activity', label: 'Activity', Icon: History, adminOnly: true },
   { href: '/admin/settings', label: 'Settings', Icon: Settings, adminOnly: true },
 ] as const;
 

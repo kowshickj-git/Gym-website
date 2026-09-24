@@ -229,7 +229,7 @@ export function CheckoutClient({
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Your plan</p>
           <p className="text-lg font-bold">{plan.category_name}</p>
           <p className="text-muted-foreground text-sm">
-            {plan.name} · {plan.duration_months} {plan.duration_months === 1 ? 'month' : 'months'}
+            {withDuration(plan.name, plan.duration_months)}
           </p>
         </div>
 
@@ -416,4 +416,13 @@ export function CheckoutClient({
 
     </div>
   );
+}
+
+/**
+ * "Annual · 12 months" helps; "3 Months · 3 months" does not. The owner names
+ * plans freely in /admin/plans, so only add the length when the name hasn't.
+ */
+function withDuration(name: string, months: number): string {
+  const duration = `${months} ${months === 1 ? 'month' : 'months'}`;
+  return name.toLowerCase().includes(duration) ? name : `${name} · ${duration}`;
 }

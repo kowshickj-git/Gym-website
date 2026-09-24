@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import { CashPaymentForm, type PaymentFormMember, type PaymentFormPlan } from '@/components/admin/cash-payment-form';
-import { requireStaff } from '@/lib/auth/guards';
+import { canTakePayments, NO_PAYMENT_PERMISSION, requireStaff } from '@/lib/auth/guards';
 import { createReadOnlyServerSupabase } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Record a payment' };
@@ -17,7 +17,28 @@ export default async function RecordPaymentPage({
 }: {
   searchParams: Promise<{ member?: string }>;
 }) {
-  const [{ member: preselected }] = await Promise.all([searchParams, requireStaff()]);
+  const [{ member: preselected }, staff] = await Promise.all([searchParams, requireStaff()]);
+
+  // Several lists link here ("Renew", "Record a payment"), so a staff account
+  // without the permission gets an explanation rather than a form that fails.
+  if (!(await canTakePayments(staff))) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-5 md:px-6 md:py-6">
+        <h1 className="text-2xl font-bold tracking-tight">Record a payment</h1>
+        <Alert variant="warning">
+          <Info aria-hidden />
+          <AlertDescription>{NO_PAYMENT_PERMISSION}</AlertDescription>
+        </Alert>
+        <Button asChild variant="outline">
+          <Link href={preselected ? `/admin/members/${preselected}` : '/admin'}>
+            <ArrowLeft aria-hidden />
+            Back
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
   const supabase = await createReadOnlyServerSupabase();
 
   const [{ data: directory }, { data: plans }] = await Promise.all([
@@ -73,11 +94,13 @@ export default async function RecordPaymentPage({
         <Alert variant="warning">
           <Info aria-hidden />
           <AlertDescription>
-            There are no active plans yet.{' '}
-            <Link href="/admin/plans" className="font-medium underline underline-offset-4">
-              Add a plan
-            </Link>{' '}
-            before recording payments.
+            <p>
+              There are no active plans yet.{' '}
+              <Link href="/admin/plans" className="font-medium underline underline-offset-4">
+                Add a plan
+              </Link>{' '}
+              before recording payments.
+            </p>
           </AlertDescription>
         </Alert>
       ) : (

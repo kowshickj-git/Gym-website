@@ -5,7 +5,7 @@ import { Alert, AlertDescription, EmptyState } from '@/components/ui/feedback';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { UpiQueue, type UpiQueueRow } from '@/components/admin/upi-queue';
-import { requireStaff } from '@/lib/auth/guards';
+import { canTakePayments, requireStaff } from '@/lib/auth/guards';
 import { createReadOnlyServerSupabase } from '@/lib/supabase/server';
 import { getGymSettings } from '@/lib/data';
 import { pluralise } from '@/lib/utils';
@@ -14,7 +14,8 @@ export const metadata: Metadata = { title: 'UPI confirmations' };
 export const dynamic = 'force-dynamic';
 
 export default async function UpiQueuePage() {
-  const [settings] = await Promise.all([getGymSettings(), requireStaff()]);
+  const [settings, staff] = await Promise.all([getGymSettings(), requireStaff()]);
+  const canDecide = await canTakePayments(staff);
   const supabase = await createReadOnlyServerSupabase();
 
   const { data } = await supabase
@@ -65,11 +66,13 @@ export default async function UpiQueuePage() {
         <Alert variant="warning">
           <Info aria-hidden />
           <AlertDescription>
-            UPI payments are switched off, so nothing new will arrive here.{' '}
-            <Link href="/admin/settings" className="font-medium underline underline-offset-4">
-              Add your UPI id in Settings
-            </Link>{' '}
-            to let members pay you directly with no transaction fee.
+            <p>
+              UPI payments are switched off, so nothing new will arrive here.{' '}
+              <Link href="/admin/settings" className="font-medium underline underline-offset-4">
+                Add your UPI id in Settings
+              </Link>{' '}
+              to let members pay you directly with no transaction fee.
+            </p>
           </AlertDescription>
         </Alert>
       ) : null}
@@ -92,7 +95,7 @@ export default async function UpiQueuePage() {
             </AlertDescription>
           </Alert>
 
-          <UpiQueue rows={rows} />
+          <UpiQueue rows={rows} canDecide={canDecide} />
         </>
       )}
     </div>

@@ -72,7 +72,14 @@ against it, and Razorpay's webhook needs the live domain.
 ## 2. Vercel
 
 1. Push the repository to GitHub, then **Add New → Project** in Vercel and
-   import it. The framework is detected automatically.
+   pick the repository from the **Import Git Repository** list. The framework
+   is detected automatically.
+
+   Use that list, not "Import Third-Party Git Repository" with a pasted URL.
+   A pasted URL is cloned once and never connected, so later pushes do not
+   deploy — the site silently stays on its first build. To check an existing
+   project: **Settings → Git** should name the repository. If it offers to
+   connect one instead, connect it.
 2. Under **Settings → Environment Variables**, use the import box and paste
    `deploy/vercel-env.txt` — `npm run deploy:kit` generates it from your
    `.env.local` in exactly that format. Check `NEXT_PUBLIC_SITE_URL` before
@@ -94,9 +101,23 @@ against it, and Razorpay's webhook needs the live domain.
 
 3. Deploy. `vercel.json` already pins the function region to `bom1` (Mumbai) and
    registers the daily cron job.
+
+   Then open `https://your-domain.com/api/health`. It reports which settings the
+   deployment can see (never their values) and whether the database answers:
+
+   ```json
+   { "ok": true, "database": "ok", "config": { "supabaseUrl": true, ... } }
+   ```
+
+   `"database": "schema missing"` means the schema step in section 1 has not been run.
+   `builtWithSupabaseUrl: false` next to `supabaseUrl: true` means the variables
+   were added after the build — the server copes, but redeploy once so the
+   browser bundle (photo uploads) has them too.
 4. Add the custom domain under **Settings → Domains**, then come back and update
-   `NEXT_PUBLIC_SITE_URL` to match and redeploy — that value is what appears in
-   the links inside SMS and WhatsApp messages.
+   `NEXT_PUBLIC_SITE_URL` to match — that value is what appears in the links
+   inside SMS and WhatsApp messages. Until you do, links use the project's
+   `.vercel.app` address; the app never sends a `localhost` link from Vercel,
+   even if that is what the variable says.
 
 ### The cron job
 
@@ -206,10 +227,15 @@ reminders try WhatsApp first and fall back to SMS.
 
 ## 6. Before you hand it over
 
-Run the configuration report against the production environment:
+Run the configuration report, then prove the security boundary holds on the
+live project. `verify:rls` uses only the publishable key — the same thing any
+visitor's browser has — and fails if it can read a private table or execute a
+function that moves money:
 
 ```bash
 npm run check:config
+npm run verify:rls
+curl https://your-domain.com/api/health
 ```
 
 Then walk the list:
@@ -228,6 +254,10 @@ Then walk the list:
 - [ ] A ₹1 live card payment completes and produces a receipt (if Razorpay is on).
 - [ ] `curl` the cron endpoint and confirm it returns a summary.
 - [ ] Staff have their own accounts — nobody is sharing the owner login.
+- [ ] Only staff who handle money have **Can take payments** switched on
+      (Settings → Staff). The others can still see members and call them.
+- [ ] `/admin/activity` shows messages as **Sent**, not **Not sent** — that is
+      how you know the SMS or WhatsApp gateway is really delivering.
 - [ ] Open `/admin` on the owner's actual phone and check that finding a member
       and calling them takes a few taps.
 
@@ -246,6 +276,10 @@ and keep a copy somewhere other than Supabase.
 
 **Locked out of the admin account**: re-run `scripts/bootstrap-admin.mjs` with
 the same email and a new password.
+
+**The site shows "Something went wrong"**: open `/api/health` first. It names
+the missing setting, or says the database schema is missing, without anyone
+needing access to the Vercel logs.
 
 **A payment was taken but no membership appeared**: find the payment in
 `/admin/payments` (it will be `Awaiting payment` or `Failed`), check the Razorpay

@@ -252,6 +252,9 @@ export async function cancelMembership(membershipId: string, reason: string): Pr
   const admin = await assertAdmin().catch(() => null);
   if (!admin) return { error: 'Only the gym owner can cancel a membership.' };
 
+  const why = reason.trim();
+  if (why.length < 3) return { error: 'Say briefly why, so the history makes sense later.' };
+
   const supabase = await createServerSupabase();
   const { data: membership } = await supabase
     .from('memberships')
@@ -260,10 +263,11 @@ export async function cancelMembership(membershipId: string, reason: string): Pr
     .maybeSingle();
 
   if (!membership) return { error: 'That membership no longer exists.' };
+  if (membership.status === 'CANCELLED') return { error: 'That membership is already cancelled.' };
 
   const { error } = await supabase
     .from('memberships')
-    .update({ status: 'CANCELLED', cancelled_at: new Date().toISOString(), cancel_reason: reason.slice(0, 300) })
+    .update({ status: 'CANCELLED', cancelled_at: new Date().toISOString(), cancel_reason: why.slice(0, 300) })
     .eq('id', membershipId);
 
   if (error) {
@@ -278,7 +282,7 @@ export async function cancelMembership(membershipId: string, reason: string): Pr
     entity: 'memberships',
     entityId: membershipId,
     before: { status: membership.status },
-    after: { status: 'CANCELLED', reason },
+    after: { status: 'CANCELLED', reason: why },
   });
 
   revalidatePath(`/admin/members/${membership.member_id}`);

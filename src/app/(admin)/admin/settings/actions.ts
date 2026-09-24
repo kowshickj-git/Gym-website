@@ -90,7 +90,6 @@ export async function inviteStaff(_prev: SettingsState, formData: FormData): Pro
     designation: formData.get('designation'),
     role: formData.get('role'),
     can_collect_cash: formData.get('can_collect_cash') === 'on',
-    can_manage_plans: formData.get('can_manage_plans') === 'on',
   });
 
   if (!parsed.success) {
@@ -144,7 +143,6 @@ export async function inviteStaff(_prev: SettingsState, formData: FormData): Pro
       display_name: parsed.data.display_name,
       designation: parsed.data.designation,
       can_collect_cash: parsed.data.can_collect_cash,
-      can_manage_plans: parsed.data.can_manage_plans,
       is_active: true,
     },
     { onConflict: 'user_id' },
@@ -186,6 +184,39 @@ export async function setStaffActive(userId: string, isActive: boolean): Promise
     entity: 'users',
     entityId: userId,
     after: { is_active: isActive },
+  });
+
+  revalidatePath('/admin/settings');
+  return {};
+}
+
+/**
+ * Turns "Can take payments" on or off for a member of staff after the account
+ * exists. Enforced by canTakePayments() in every action that moves money.
+ */
+export async function setStaffCanTakePayments(userId: string, allowed: boolean): Promise<{ error?: string }> {
+  const admin = await assertAdmin().catch(() => null);
+  if (!admin) return { error: 'Only the gym owner can manage staff.' };
+
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from('admin_users')
+    .update({ can_collect_cash: allowed })
+    .eq('user_id', userId)
+    .select('user_id');
+
+  if (error || !data?.length) {
+    console.error('[admin] toggle payment permission failed', error);
+    return { error: 'Could not update that account.' };
+  }
+
+  await recordAudit({
+    actorUserId: admin.id,
+    actorLabel: admin.profile.full_name ?? admin.profile.email,
+    action: allowed ? 'STAFF_PAYMENTS_ALLOWED' : 'STAFF_PAYMENTS_REVOKED',
+    entity: 'admin_users',
+    entityId: userId,
+    after: { can_collect_cash: allowed },
   });
 
   revalidatePath('/admin/settings');

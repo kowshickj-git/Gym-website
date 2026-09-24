@@ -269,11 +269,25 @@ belongs to a member, so it cannot be used to enumerate the membership.
   `fn_update_my_profile`, whose parameter list *is* the set of editable fields —
   the phone number is deliberately not among them.
 - The `otp_challenges` table has RLS on and zero policies: service role only.
-- Money-moving functions are revoked from `PUBLIC` and granted back only to
-  `service_role`, so they cannot be called directly through PostgREST.
+- Money-moving functions are executable only by `service_role`, so they cannot
+  be called through PostgREST with a browser key. Note *how*: on Supabase,
+  `revoke ... from public` does nothing, because a default ACL grants EXECUTE to
+  `anon` and `authenticated` directly. Migration 000500 revokes from those roles
+  and changes the default so new functions start closed.
+- Signed-in users cannot write `payments` or `memberships` at all; every such
+  write goes through the server. The one exception is the owner marking a
+  membership cancelled, limited by column grants to the three columns that
+  cancelling touches.
+- Staff take money only if the owner has switched **Can take payments** on for
+  them. That is checked by the actions, not just by hiding buttons.
+- Login codes never reach the message log in the clear: a trigger masks them
+  on write, so staff reading `/admin/activity` cannot sign in as a member.
 - Secrets live only in environment variables. The service role key is never
   imported into anything that can reach the browser.
-- Every privileged mutation writes an `audit_logs` row.
+- Every privileged mutation writes an `audit_logs` row, readable by the owner
+  at `/admin/activity` alongside every message the system has sent.
+- `npm run verify:rls` asserts all of the above against a live project using
+  only the publishable key. Run it after any migration.
 
 ---
 
@@ -286,7 +300,7 @@ src/
     (auth)/            member login + OTP verification
     (admin-auth)/      staff login (outside the admin guard)
     (member)/          dashboard, profile, checkout, payments, receipts
-    (admin)/admin/     dashboard, members, plans, offers, payments, reports, settings
+    (admin)/admin/     dashboard, members, plans, offers, payments, reports, activity, settings
     api/               auth, payments, webhooks, cron, admin export
   components/
     ui/                shadcn/ui primitives
@@ -300,11 +314,14 @@ src/
     notifications/     provider interface, registry, templates
     supabase/          browser / server / service-role clients
 supabase/
-  migrations/          schema, functions, RLS, storage
+  migrations/          schema, functions, RLS, storage, privilege lockdown
   seed.sql             gym profile, catalogue and demo data
 scripts/
   bootstrap-admin.mjs  creates or repairs the owner account
   check-config.mjs     pre-flight configuration report
+  verify-rls.mjs       live security-boundary check (publishable key only)
+  deploy-kit.mjs       paste-ready SQL and Vercel env files in deploy/
+proxy.ts               session refresh and signed-out redirects (Next 16)
 ```
 
 ---
@@ -315,7 +332,8 @@ scripts/
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build |
-| `npm test` | Unit tests for the discount engine |
+| `npm test` | Unit tests: discount engine, UPI links, phone numbers, environment |
+| `npm run verify:rls` | Check a live project's security boundary with the publishable key |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm run check:config` | Report which integrations are live |
 | `npm run bootstrap:admin` | Create or repair the owner account |
@@ -345,3 +363,14 @@ Vercel, Razorpay keys and webhook, the cron job, and the post-deploy checks.
   require an implicit index signature, which interfaces do not get.
 - **Receipts render from the stored snapshot**, not from live tables. A receipt
   must keep saying what it said on the day it was issued.
+- **`NEXT_PUBLIC_*` values are frozen at build time.** Server code must read the
+  Supabase URL and key through `supabasePublicConfig()` and the public origin
+  through `siteUrl()`, which read at request time. The first production deploy
+  500ed on every data page because it was built before the variables existed.
+- **On Supabase, `revoke ... from public` is not a revoke.** Revoke from `anon`
+  and `authenticated` by name, then run `npm run verify:rls`.
+- **`proxy.ts` is Next 16's middleware.** It refreshes the session and redirects
+  signed-out users; it never makes authorisation decisions. The guards in
+  `src/lib/auth/guards.ts` do.
+- **Health check**: `GET /api/health` reports what a deployment can see.
+  Start there when a deployed page errors.

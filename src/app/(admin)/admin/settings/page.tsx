@@ -22,7 +22,7 @@ export default async function SettingsPage() {
     getGymSettings(),
     supabase
       .from('users')
-      .select('id, full_name, email, role, is_active, created_at')
+      .select('id, full_name, email, role, is_active, created_at, admin_users(can_collect_cash)')
       .in('role', ['ADMIN', 'STAFF'])
       .order('created_at'),
   ]);
@@ -140,7 +140,15 @@ export default async function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <StaffManager staff={staff ?? []} currentUserId={admin.id} />
+          <StaffManager
+            staff={(staff ?? []).map(({ admin_users: extra, ...row }) => ({
+              ...row,
+              // One-to-one embed. The owner may always take payments, whatever their row says.
+              can_take_payments:
+                row.role === 'ADMIN' || Boolean((Array.isArray(extra) ? extra[0] : extra)?.can_collect_cash),
+            }))}
+            currentUserId={admin.id}
+          />
         </CardContent>
       </Card>
     </div>

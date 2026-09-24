@@ -18,7 +18,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/misc';
 import { SubmitButton } from '@/components/submit-button';
-import { inviteStaff, setStaffActive, type SettingsState } from '@/app/(admin)/admin/settings/actions';
+import {
+  inviteStaff,
+  setStaffActive,
+  setStaffCanTakePayments,
+  type SettingsState,
+} from '@/app/(admin)/admin/settings/actions';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/types/database';
 
@@ -29,11 +34,20 @@ interface StaffRow {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  can_take_payments: boolean;
 }
 
 export function StaffManager({ staff, currentUserId }: { staff: StaffRow[]; currentUserId: string }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  function togglePayments(row: StaffRow) {
+    startTransition(async () => {
+      const result = await setStaffCanTakePayments(row.id, !row.can_take_payments);
+      if (result.error) toast.error(result.error);
+      else toast.success(row.can_take_payments ? 'They can no longer take payments.' : 'They can now take payments.');
+    });
+  }
 
   function toggle(row: StaffRow) {
     startTransition(async () => {
@@ -61,6 +75,16 @@ export function StaffManager({ staff, currentUserId }: { staff: StaffRow[]; curr
               </div>
               <p className="text-muted-foreground truncate text-xs">{row.email}</p>
               <p className="text-muted-foreground text-xs">Added {formatDate(row.created_at)}</p>
+              {row.role === 'STAFF' ? (
+                <label className="mt-2 flex items-center gap-2 text-xs">
+                  <Switch
+                    checked={row.can_take_payments}
+                    onCheckedChange={() => togglePayments(row)}
+                    disabled={pending || !row.is_active}
+                  />
+                  Can take payments
+                </label>
+              ) : null}
             </div>
             <Switch
               checked={row.is_active}
@@ -169,7 +193,7 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
           </div>
 
           <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-            <Label htmlFor="can_collect_cash">Can take payments at the desk</Label>
+            <Label htmlFor="can_collect_cash">Can take payments</Label>
             <Switch id="can_collect_cash" name="can_collect_cash" defaultChecked />
           </div>
 
