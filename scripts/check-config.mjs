@@ -75,8 +75,8 @@ const smsReady =
 console.log(`    ${smsReady ? '✔' : '○'} SMS via ${smsProvider}`);
 if (!smsReady) {
   warnings += 1;
-  console.log('      → Login codes will be written to the server log, not sent.');
-  console.log('        That is fine for a demo; it is not fine for real members.');
+  console.log('      → Members cannot sign in: the login page asks them to call the gym.');
+  console.log('        Only the sample demo numbers work (with demo mode on).');
 }
 
 const whatsappProvider = (process.env.WHATSAPP_PROVIDER ?? 'console').toLowerCase();
@@ -98,10 +98,10 @@ console.log(`    ${cronReady ? '✔' : '✖'} CRON_SECRET — required for the d
 
 console.log('\n  Mode');
 const demo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.DEMO_MODE === 'true';
-console.log(`    ${demo ? '!' : '✔'} Demo mode is ${demo ? 'ON' : 'off'}`);
+console.log(`    ${demo ? '○' : '✔'} Demo mode is ${demo ? 'on' : 'off'}`);
 if (demo) {
-  warnings += 1;
-  console.log('      → OTP codes are shown in the browser. Never leave this on for a real gym.');
+  console.log('      → Login codes for the sample numbers (+91 90000 00001–9) appear on screen.');
+  console.log("        Real members' codes never do, so this is safe alongside real members.");
 }
 
 console.log('');

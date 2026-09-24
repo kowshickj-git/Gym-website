@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.ok) {
+      if (result.unavailable) return NextResponse.json({ error: result.error }, { status: 503 });
       return NextResponse.json(
         { error: result.error },
         { status: 429, headers: result.retryAfter ? { 'Retry-After': String(result.retryAfter) } : undefined },
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       maskedPhone: maskPhone(phone),
       expiresAt: result.expiresAt,
       expiresInSeconds: OTP_TTL_SECONDS,
-      /** Only populated when DEMO_MODE is on. */
+      /** Only populated in demo mode, and only for the fictional demo numbers. */
       devCode: result.devCode,
       simulated: result.simulated,
     });

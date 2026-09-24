@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhone, isValidPhone, maskPhone, normalisePhone } from './phone';
+import { formatPhone, isDemoPhone, isValidPhone, maskPhone, normalisePhone } from './phone';
 
 /**
  * The phone number is the member's login identity and the uniqueness key, so
@@ -72,5 +72,20 @@ describe('display helpers', () => {
   it('masks everything but the last four digits', () => {
     expect(maskPhone('+919876543210')).toBe('••••••3210');
     expect(maskPhone(null)).toBe('');
+  });
+});
+
+describe('isDemoPhone', () => {
+  it('accepts only the sample numbers from seed.sql', () => {
+    expect(isDemoPhone('+919000000001')).toBe(true);
+    expect(isDemoPhone('+919000000009')).toBe(true);
+  });
+
+  it('rejects real numbers', () => {
+    expect(isDemoPhone('+919876543210')).toBe(false);
+    expect(isDemoPhone('+919000000000')).toBe(false); // the seed's gym line, not a member
+    expect(isDemoPhone('+9190000000011')).toBe(false);
+    expect(isDemoPhone('9000000001')).toBe(false); // un-normalised input is never trusted
+    expect(isDemoPhone(null)).toBe(false);
   });
 });

@@ -119,13 +119,15 @@ npm run dev
 
 ## Demo mode
 
-Without an SMS gateway, nobody can receive a login code. Setting
-`NEXT_PUBLIC_DEMO_MODE=true` and `DEMO_MODE=true` shows the code on screen
-instead so a reviewer can sign in. It changes nothing else — the code is still
-generated, hashed, rate-limited and expired exactly as in production.
+Setting `NEXT_PUBLIC_DEMO_MODE=true` and `DEMO_MODE=true` shows the login code
+on screen for the fictional sample members only (+91 90000 00001 to 00009), so
+anyone can try the member side without an SMS gateway. It changes nothing else —
+the code is still generated, hashed, rate-limited and expired as in production.
 
-**Never leave demo mode on for a real gym**: with it on, anyone who knows a
-member's number can read their login code.
+Real numbers never get an on-screen code, so demo mode is safe to leave on after
+real members join. Until an SMS gateway is configured, a real member who tries
+to sign in is told that online login is not switched on yet and given the gym's
+number, rather than waiting for a text that will never arrive.
 
 With the seed data loaded, sign in as any demo member:
 

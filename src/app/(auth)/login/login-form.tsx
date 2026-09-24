@@ -96,8 +96,9 @@ export function LoginForm({ nextPath, demoMode }: { nextPath?: string; demoMode:
           <AlertCircle aria-hidden />
           <AlertDescription>
             <p>
-              Demo mode is on: the code is shown on the next screen instead of being sent by SMS. Try{' '}
-              <span className="font-mono font-semibold">9000000001</span> (Arun Kumar).
+              Want to look around? Sign in as a sample member with{' '}
+              <span className="font-mono font-semibold">9000000001</span> (Arun Kumar) — the code appears on the next
+              screen.
             </p>
           </AlertDescription>
         </Alert>

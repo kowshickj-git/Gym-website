@@ -7,7 +7,8 @@ import nextTypescript from 'eslint-config-next/typescript';
  */
 const config = [
   {
-    ignores: ['.next/**', 'node_modules/**', 'out/**', 'public/sw.js', 'next-env.d.ts'],
+    // deploy/ is generated and gitignored: SQL bundles, env exports, local test harnesses.
+    ignores: ['.next/**', 'node_modules/**', 'out/**', 'public/sw.js', 'next-env.d.ts', 'deploy/**'],
   },
   ...coreWebVitals,
   ...nextTypescript,

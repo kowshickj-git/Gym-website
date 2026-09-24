@@ -3,7 +3,8 @@ import 'server-only';
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import { requireEnv, serverEnv } from '@/lib/env';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { dispatch, templates } from '@/lib/notifications';
+import { dispatch, isLiveChannel, templates } from '@/lib/notifications';
+import { formatPhone, isDemoPhone } from '@/lib/phone';
 import {
   OTP_LENGTH,
   OTP_MAX_ATTEMPTS,
@@ -49,7 +50,13 @@ export type OtpRequestResult =
       /** True when the code was only written to the server log. */
       simulated: boolean;
     }
-  | { ok: false; error: string; retryAfter?: number };
+  | {
+      ok: false;
+      error: string;
+      retryAfter?: number;
+      /** No SMS gateway can deliver to this number yet; not a rate limit. */
+      unavailable?: boolean;
+    };
 
 export interface OtpRequestContext {
   ipAddress?: string | null;
@@ -66,6 +73,16 @@ export interface OtpRequestContext {
 export async function requestOtp(phone: string, context: OtpRequestContext = {}): Promise<OtpRequestResult> {
   const supabase = createAdminClient();
   const now = Date.now();
+
+  // Without an SMS gateway the code would only reach the server log, and the
+  // member would wait for a text that never comes. Say so plainly instead.
+  // Demo numbers are the exception: demo mode shows their code on screen.
+  // The answer is the same whether or not the number belongs to a member.
+  if (!isLiveChannel('SMS') && !(serverEnv.demoMode && isDemoPhone(phone))) {
+    const { data: gym } = await supabase.from('gym_settings').select('contact_phone').eq('id', true).maybeSingle();
+    const call = gym?.contact_phone ? ` Please call the gym on ${formatPhone(gym.contact_phone)}.` : ' Please contact the gym.';
+    return { ok: false, unavailable: true, error: `Online login is not switched on yet.${call}` };
+  }
 
   // Durable rate limit: counts real rows, so it survives serverless cold starts.
   const { data: recent, error: recentError } = await supabase
@@ -151,7 +168,7 @@ export async function requestOtp(phone: string, context: OtpRequestContext = {})
     ok: true,
     expiresAt,
     simulated,
-    devCode: serverEnv.demoMode ? code : undefined,
+    devCode: serverEnv.demoMode && isDemoPhone(phone) ? code : undefined,
   };
 }
 

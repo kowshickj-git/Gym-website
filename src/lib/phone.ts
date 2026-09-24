@@ -79,3 +79,15 @@ export function maskPhone(phone: string | null | undefined): string {
   const digits = phone.replace(/\D/g, '');
   return `••••••${digits.slice(-4)}`;
 }
+
+/**
+ * The fictional numbers supabase/seed.sql gives its sample members
+ * (+91 90000 00001 to 00009). Demo mode reveals login codes on screen for these
+ * numbers only, so it can stay on after real members join without letting
+ * anyone read a real member's code.
+ */
+const DEMO_PHONE = /^\+91900000000[1-9]$/;
+
+export function isDemoPhone(phone: string | null | undefined): boolean {
+  return typeof phone === 'string' && DEMO_PHONE.test(phone);
+}
